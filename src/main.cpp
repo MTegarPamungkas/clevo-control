@@ -1,5 +1,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QLockFile>
+#include <QDir>
 #include <QQmlContext>
 
 #include "backend.h"
@@ -14,6 +16,17 @@ int main(int argc, char *argv[]) {
     app.setOrganizationName(QStringLiteral("kbdlight"));
     // Lets the compositor match the window to kbdlight.desktop and its icon.
     app.setDesktopFileName(QStringLiteral("kbdlight"));
+
+    // Refuse to run twice. Two instances both drive the same backlight and
+    // both react to idle, so quitting one looked like the other had turned
+    // the light off, and the portal registration failed with "Connection
+    // already associated with an application ID".
+    QLockFile lock(QDir::tempPath() + QStringLiteral("/kbdlight.lock"));
+    lock.setStaleLockTime(0);
+    if (!lock.tryLock(100)) {
+        qWarning("Clevo Control is already running");
+        return 0;
+    }
 
     Theme theme;
     Backend backend;
