@@ -73,9 +73,18 @@ ApplicationWindow {
         }
     }
 
-    ColumnLayout {
+    minimumWidth: 520
+    minimumHeight: 640
+
+    ScrollView {
+        id: scroller
         anchors.fill: parent
         anchors.margins: 20
+        clip: true
+        ScrollBar.vertical.policy: ScrollBar.AsNeeded
+
+    ColumnLayout {
+        width: scroller.availableWidth
         spacing: 18
 
         // ---- Brightness ----
@@ -283,6 +292,7 @@ ApplicationWindow {
         }
 
         Item { Layout.fillWidth: true; Layout.fillHeight: !root.showAdvanced }
+    }
     }
 
     Popup {

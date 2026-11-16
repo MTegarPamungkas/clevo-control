@@ -12,7 +12,7 @@ the Omarchy theme.
 |---|---|
 | Brightness 0-9 (0 = off, 1 = dim, 9 = bright) | **works** |
 | Turn off | **works** |
-| Colour (RGB) | **works** — the payload order is BRG, see below |
+| Colour (RGB) | **works** — HSV picker, payload order is BRG, see below |
 
 ### About colour: the payload order is BRG, not RGB
 
@@ -30,6 +30,10 @@ So an RGB colour is rotated into BRG before it is sent. This is easy to get
 wrong and obvious when you do: `#00FFFF` (cyan) sent as plain RGB lights
 red+green and comes out **yellow**, which is exactly how the order was
 identified on this machine.
+
+Pick any colour with the HSV picker (saturation/value square plus a hue
+strip); it previews live and writes to the hardware as you drag. Eight
+presets are there for the common picks.
 
 `kbdlight-ctl color <r> <g> <b>` takes plain RGB and does the rotation, so
 the quirk lives in one place. The **Diagnostics** panel sends each payload
