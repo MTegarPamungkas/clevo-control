@@ -189,6 +189,7 @@ ApplicationWindow {
         // dragging does not flood the EC with dozens of ACPI calls.
         ColorPicker {
             id: picker
+            objectName: "picker"
             Layout.fillWidth: true
             color: backend.color
             onPicked: (c) => {

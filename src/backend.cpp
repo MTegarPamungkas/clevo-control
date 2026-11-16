@@ -7,6 +7,10 @@
 static const char *HELPER = "kbdlight-ctl";
 
 Backend::Backend(QObject *parent) : QObject(parent) {
+    // Long enough to swallow a drag, short enough to feel immediate on release.
+    m_colorDebounce.setSingleShot(true);
+    m_colorDebounce.setInterval(90);
+    connect(&m_colorDebounce, &QTimer::timeout, this, &Backend::flushPending);
     refresh();
 }
 
@@ -31,34 +35,29 @@ void Backend::refresh() {
         setStatus(tr("Helper %1 not found — run bin/install").arg(HELPER));
         return;
     }
-
-    QString err;
-    if (!runHelper({QStringLiteral("probe")}, &err)) {
-        setStatus(tr("ACPI method unreachable: %1").arg(err.trimmed()));
-        return;
-    }
     setStatus(tr("Ready"));
 }
 
-bool Backend::runHelper(const QStringList &args, QString *err) {
+void Backend::runHelper(const QStringList &args) {
     QString path = QStandardPaths::findExecutable(HELPER);
     if (path.isEmpty())
         path = QStringLiteral("/usr/local/bin/") + HELPER;
 
-    QProcess p;
-    p.start(path, args);
-    if (!p.waitForFinished(5000)) {
-        p.kill();
-        if (err)
-            *err = tr("helper timed out");
-        return false;
-    }
-    if (p.exitStatus() != QProcess::NormalExit || p.exitCode() != 0) {
-        if (err)
-            *err = QString::fromLocal8Bit(p.readAllStandardError());
-        return false;
-    }
-    return true;
+    auto *p = new QProcess(this);
+    // Report failures from the exit handler, never by blocking the caller.
+    connect(p, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+            [this, p](int code, QProcess::ExitStatus st) {
+                if (st != QProcess::NormalExit || code != 0) {
+                    const QString err = QString::fromLocal8Bit(p->readAllStandardError()).trimmed();
+                    setStatus(err.isEmpty() ? tr("Helper failed") : err);
+                }
+                p->deleteLater();
+            });
+    connect(p, &QProcess::errorOccurred, this, [this, p](QProcess::ProcessError) {
+        setStatus(tr("Helper error: %1").arg(p->errorString()));
+        p->deleteLater();
+    });
+    p->start(path, args);
 }
 
 void Backend::setBrightness(int level) {
@@ -71,11 +70,8 @@ void Backend::setBrightness(int level) {
     m_brightness = level;
     emit brightnessChanged();
 
-    QString err;
-    if (!runHelper({QStringLiteral("brightness"), QString::number(level)}, &err))
-        setStatus(tr("Brightness failed: %1").arg(err.trimmed()));
-    else
-        setStatus(level == 0 ? tr("Backlight off") : tr("Brightness %1").arg(level));
+    runHelper({QStringLiteral("brightness"), QString::number(level)});
+    setStatus(level == 0 ? tr("Backlight off") : tr("Brightness %1").arg(level));
 }
 
 void Backend::setColor(const QColor &c) {
@@ -83,46 +79,42 @@ void Backend::setColor(const QColor &c) {
         return;
     m_color = c;
     emit colorChanged();
+    scheduleColor();
+}
 
-    // The helper rotates RGB into the BRG order this panel actually uses
-    // (payload A=blue, B=red, C=green), so QML stays plain RGB and the
-    // hardware quirk lives in one place.
-    QString err;
-    if (!runHelper({QStringLiteral("color"), QString::number(c.red()),
-                    QString::number(c.green()), QString::number(c.blue())},
-                   &err))
-        setStatus(tr("Colour failed: %1").arg(err.trimmed()));
-    else
-        setStatus(tr("Colour %1").arg(c.name().toUpper()));
+void Backend::scheduleColor() {
+    // Restarting the timer on every update means only the last colour of a
+    // drag reaches the hardware, and the UI never waits for it.
+    m_pendingColor = true;
+    m_colorDebounce.start();
+}
+
+void Backend::flushPending() {
+    if (!m_pendingColor)
+        return;
+    m_pendingColor = false;
+    const QColor c = m_color;
+    runHelper({QStringLiteral("color"), QString::number(c.red()),
+               QString::number(c.green()), QString::number(c.blue())});
+    setStatus(tr("Colour %1").arg(c.name().toUpper()));
 }
 
 void Backend::apply() {
-    QString err;
-    if (!runHelper({QStringLiteral("brightness"), QString::number(m_brightness)}, &err)) {
-        setStatus(tr("Brightness failed: %1").arg(err.trimmed()));
-        return;
-    }
-    if (!runHelper({QStringLiteral("color"), QString::number(m_color.red()),
-                    QString::number(m_color.green()), QString::number(m_color.blue())},
-                   &err)) {
-        setStatus(tr("Colour failed: %1").arg(err.trimmed()));
-        return;
-    }
+    runHelper({QStringLiteral("brightness"), QString::number(m_brightness)});
+    m_pendingColor = false;
+    m_colorDebounce.stop();
+    const QColor c = m_color;
+    runHelper({QStringLiteral("color"), QString::number(c.red()),
+               QString::number(c.green()), QString::number(c.blue())});
     setStatus(tr("Applied"));
 }
 
 void Backend::turnOff() {
-    QString err;
-    if (!runHelper({QStringLiteral("off")}, &err))
-        setStatus(tr("Off failed: %1").arg(err.trimmed()));
-    else
-        setStatus(tr("Backlight off"));
+    runHelper({QStringLiteral("off")});
+    setStatus(tr("Backlight off"));
 }
 
 void Backend::applyRaw(const QString &hexDword) {
-    QString err;
-    if (!runHelper({QStringLiteral("raw"), hexDword}, &err))
-        setStatus(tr("Raw write failed: %1").arg(err.trimmed()));
-    else
-        setStatus(tr("Sent %1").arg(hexDword));
+    runHelper({QStringLiteral("raw"), hexDword});
+    setStatus(tr("Sent %1").arg(hexDword));
 }
