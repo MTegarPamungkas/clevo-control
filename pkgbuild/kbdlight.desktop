@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Keyboard Light
+Comment=Control the Clevo keyboard backlight
+Exec=kbdlight
+Icon=kbdlight
+Terminal=false
+Categories=System;Settings;HardwareSettings;
+Keywords=keyboard;backlight;led;rgb;brightness;clevo;
+StartupWMClass=kbdlight

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Install kbdlight into the launcher. Needs sudo: the helper must be setuid
+# root to write /proc/acpi/call.
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+./bin/build
+
+echo "==> installing /usr/local/bin/kbdlight"
+sudo install -m 0755 build/kbdlight /usr/local/bin/kbdlight
+
+echo "==> installing setuid helper /usr/local/bin/kbdlight-ctl"
+sudo install -m 4750 -o root -g wheel build/kbdlight-ctl /usr/local/bin/kbdlight-ctl
+
+echo "==> installing desktop entry and icon"
+sudo install -d /usr/local/share/applications /usr/local/share/icons/hicolor/scalable/apps
+sudo install -m 0644 pkgbuild/kbdlight.desktop /usr/local/share/applications/kbdlight.desktop
+sudo install -m 0644 pkgbuild/kbdlight.svg /usr/local/share/icons/hicolor/scalable/apps/kbdlight.svg
+sudo update-desktop-database /usr/local/share/applications 2>/dev/null || true
+
+echo "==> done"
+ls -l /usr/local/bin/kbdlight /usr/local/bin/kbdlight-ctl

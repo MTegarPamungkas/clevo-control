@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Build kbdlight and its setuid helper into build/.
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+mkdir -p build
+qmake6 kbdlight.pro -o build/Makefile >/dev/null
+make -C build -j"$(nproc)"
+
+# The helper is plain C, so build it separately and keep it out of the Qt
+# project to avoid pulling Qt into a setuid binary.
+gcc -O2 -Wall -Wextra -o build/kbdlight-ctl src/kbdlight-ctl.c
+
+echo "built: build/kbdlight build/kbdlight-ctl"
