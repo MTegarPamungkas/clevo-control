@@ -17,6 +17,27 @@ Two tabs: **Keyboard** and **Fan** (`Ctrl+1` / `Ctrl+2`).
 | Colour (RGB) | **works** — HSV picker, payload order is BRG, see below |
 | CPU / GPU temperature and both fan RPMs | **live**, via the daemon |
 | Fan speed: automatic or fixed 40-100% | **works** |
+| Backlight auto-off when idle | **works** — needs the `input` group |
+
+### Turning the backlight off when idle
+
+Switch **Turn off when idle** on and pick a timeout; the light goes out after
+that many seconds without a key press and comes back the instant you type
+again. It restores the level you had chosen, never a guessed one.
+
+Idle is detected by reading the keyboard's `/dev/input/event*` node directly.
+logind's `IdleHint` is not usable here: Hyprland never reports idle to it, so
+`IdleHint` stays false and `IdleSinceHint` stays 0.
+
+Reading the event node needs membership of the `input` group, which the udev
+rule `pkgbuild/90-kbdlight-input.rules` grants on install:
+
+```bash
+sudo usermod -aG input $USER   # then log out and back in
+```
+
+Until that is done the app says the device is not readable instead of
+pretending the feature works.
 
 ### How the two halves stay out of each other's way
 

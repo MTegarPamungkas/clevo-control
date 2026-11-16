@@ -109,6 +109,17 @@ void Backend::apply() {
     setStatus(tr("Applied"));
 }
 
+void Backend::forceBrightness(int level) {
+    if (level < 0)
+        level = 0;
+    if (level > 9)
+        level = 9;
+    m_brightness = level;
+    emit brightnessChanged();
+    runHelper({QStringLiteral("brightness"), QString::number(level)});
+    setStatus(level == 0 ? tr("Backlight off") : tr("Brightness %1").arg(level));
+}
+
 void Backend::turnOff() {
     runHelper({QStringLiteral("off")});
     setStatus(tr("Backlight off"));

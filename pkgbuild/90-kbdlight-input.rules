@@ -1,0 +1,4 @@
+# Let the `input` group read the built-in keyboard so the idle watcher can
+# tell when the user last typed. Without this the device is root-only and the
+# auto-off feature cannot work.
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="AT Translated Set 2 keyboard", MODE="0640", GROUP="input"

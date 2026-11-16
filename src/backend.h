@@ -36,6 +36,11 @@ public:
     Q_INVOKABLE void turnOff();
     Q_INVOKABLE void applyRaw(const QString &hexDword);
 
+    // Write a level to the hardware even when it matches the stored one.
+    // Needed by the idle watcher: turning the light off leaves m_brightness
+    // untouched, so restoring it would otherwise be skipped as a no-op.
+    Q_INVOKABLE void forceBrightness(int level);
+
 signals:
     void brightnessChanged();
     void colorChanged();

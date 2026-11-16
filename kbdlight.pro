@@ -9,11 +9,13 @@ SOURCES += \
     src/main.cpp \
     src/backend.cpp \
     src/fanbackend.cpp \
+    src/idlewatcher.cpp \
     src/theme.cpp
 
 HEADERS += \
     src/backend.h \
     src/fanbackend.h \
+    src/idlewatcher.h \
     src/theme.h
 
 RESOURCES += src/resources.qrc

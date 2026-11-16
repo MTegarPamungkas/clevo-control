@@ -242,6 +242,89 @@ ApplicationWindow {
                     }
                 }
 
+                // ---- Idle auto-off ----
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: Qt.rgba(1, 1, 1, 0.08)
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+
+                    ColumnLayout {
+                        spacing: 2
+                        Layout.fillWidth: true
+                        Label {
+                            text: qsTr("Turn off when idle")
+                            font.pixelSize: 13
+                            font.bold: true
+                            color: Qt.rgba(1, 1, 1, 0.75)
+                        }
+                        Label {
+                            text: idle.deviceAvailable
+                                  ? qsTr("The light comes back the moment you type.")
+                                  : qsTr("Keyboard device not readable — see the note below.")
+                            font.pixelSize: 11
+                            color: idle.deviceAvailable ? Qt.rgba(1, 1, 1, 0.4) : "#FF9F0A"
+                            wrapMode: Text.WordWrap
+                            Layout.fillWidth: true
+                        }
+                    }
+
+                    Switch {
+                        checked: idle.enabled
+                        enabled: idle.deviceAvailable
+                        onToggled: idle.enabled = checked
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+                    visible: idle.enabled
+                    Label {
+                        text: qsTr("After")
+                        font.pixelSize: 12
+                        color: Qt.rgba(1, 1, 1, 0.6)
+                    }
+                    Slider {
+                        id: idleSlider
+                        Layout.fillWidth: true
+                        from: 10
+                        to: 300
+                        stepSize: 10
+                        snapMode: Slider.SnapAlways
+                        value: idle.timeoutSeconds
+                        onMoved: idle.timeoutSeconds = Math.round(value)
+                    }
+                    Label {
+                        text: qsTr("%n s", "", idle.timeoutSeconds)
+                        font.pixelSize: 12
+                        color: theme.accent
+                        Layout.preferredWidth: 52
+                        horizontalAlignment: Text.AlignRight
+                    }
+                }
+
+                Label {
+                    Layout.fillWidth: true
+                    visible: idle.enabled && idle.dimmed
+                    text: qsTr("Backlight is off — type to bring it back.")
+                    font.pixelSize: 11
+                    color: Qt.rgba(1, 1, 1, 0.45)
+                }
+
+                Label {
+                    Layout.fillWidth: true
+                    visible: !idle.deviceAvailable
+                    text: qsTr("Reading key presses needs membership of the input group:\n  sudo usermod -aG input $USER\nthen log out and back in.")
+                    font.pixelSize: 11
+                    color: Qt.rgba(1, 1, 1, 0.45)
+                    wrapMode: Text.WordWrap
+                }
+
                 RowLayout {
                     Layout.fillWidth: true
                     Item { Layout.fillWidth: true }
