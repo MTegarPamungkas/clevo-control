@@ -12,19 +12,29 @@ the Omarchy theme.
 |---|---|
 | Brightness 0-9 (off / dim / bright) | **works** |
 | Turn off | **works** |
-| Colour (RGB) | **red only on this model** — see below |
+| Colour (RGB) | **works** — the payload order is BRG, see below |
 
-### About colour
+### About colour: the payload order is BRG, not RGB
 
 The firmware exposes a colour command (`\_SB_.WMI_.SCMD`, id `0x67`, mode
-`0xF`) that forwards three payload bytes to the embedded controller. On the
-Pongo 725 those bytes drive a **single red channel**: sending full value on
-A, B or C all produce red. The LED is a single-colour (blue/red) backlight,
-not an addressable RGB strip, so arbitrary colours are not available.
+`0xF`) that forwards three payload bytes to the embedded controller. The
+payload is **not** in RGB order — the wiring on the Pongo 725 maps it as:
 
-The **Diagnostics** panel sends each channel alone so you can confirm this on
-your own machine. If your model does have RGB, the panel tells you which
-channel drives which colour.
+| Payload byte | Colour |
+|---|---|
+| A (bits 16-23) | **blue** |
+| B (bits 8-15) | **red** |
+| C (bits 0-7) | **green** |
+
+So an RGB colour is rotated into BRG before it is sent. This is easy to get
+wrong and obvious when you do: `#00FFFF` (cyan) sent as plain RGB lights
+red+green and comes out **yellow**, which is exactly how the order was
+identified on this machine.
+
+`kbdlight-ctl color <r> <g> <b>` takes plain RGB and does the rotation, so
+the quirk lives in one place. The **Diagnostics** panel sends each payload
+byte alone (`A -> blue`, `B -> red`, `C -> green`) so you can re-confirm it
+on a different model.
 
 ## Build and install
 
