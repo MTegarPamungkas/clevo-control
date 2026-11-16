@@ -1,8 +1,10 @@
-# kbdlight
+# Clevo Control
 
-Control the keyboard backlight on Clevo-based laptops (tested on **Axioo
-Pongo 725**, Clevo NH5xR) from a small keyboard-driven window that follows
-the Omarchy theme.
+One window for the two things this laptop needs tuned: the **keyboard
+backlight** and the **fans**. Tested on **Axioo Pongo 725** (Clevo NH5xR).
+Follows the Omarchy theme and is driven from the keyboard.
+
+Two tabs: **Keyboard** and **Fan** (`Ctrl+1` / `Ctrl+2`).
 
 ![screenshot](docs/screenshot.png)
 
@@ -13,6 +15,27 @@ the Omarchy theme.
 | Brightness 0-9 (0 = off, 1 = dim, 9 = bright) | **works** |
 | Turn off | **works** |
 | Colour (RGB) | **works** — HSV picker, payload order is BRG, see below |
+| CPU / GPU temperature and both fan RPMs | **live**, via the daemon |
+| Fan speed: automatic or fixed 40-100% | **works** |
+
+### How the two halves stay out of each other's way
+
+The fans are owned by a background daemon (`clevo-indicator-dual`, a systemd
+user service) that polls the embedded controller every 200 ms. The keyboard
+backlight goes through ACPI instead, so it can be driven at the same time.
+
+The GUI never touches the fan EC registers itself. It talks to the daemon over
+a Unix socket at `/run/clevo-indicator-dual.sock`:
+
+```
+status          -> ok cpu=62 gpu=56 rpm1=4520 rpm2=2403 duty=55 auto=1
+set <0|40..100> -> ok        (0 hands both fans back to the firmware curve)
+```
+
+A second process poking the EC I/O ports corrupts the daemon's replies — that
+is what produced impossible readings like "25978 RPM" before. Keeping the
+daemon as the only writer removes that whole class of bug, and the GUI shows
+"daemon offline" instead of inventing numbers when the service is stopped.
 
 ### About colour: the payload order is BRG, not RGB
 
@@ -41,6 +64,14 @@ byte alone (`A -> blue`, `B -> red`, `C -> green`) so you can re-confirm it
 on a different model.
 
 ## Build and install
+
+The fan tab needs the daemon with the control socket, which lives in the
+separate fan project:
+
+```bash
+cd ~/Projects/clevo-axioo-dual-fan-linux
+./install-fixed.sh
+```
 
 ```bash
 ./bin/build     # builds build/kbdlight and build/kbdlight-ctl

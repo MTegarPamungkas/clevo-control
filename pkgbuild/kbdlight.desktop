@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
-Name=Keyboard Light
-Comment=Control the Clevo keyboard backlight
+Name=Clevo Control
+Comment=Keyboard backlight and fan control
 Exec=kbdlight
 Icon=kbdlight
 Terminal=false
