@@ -84,10 +84,9 @@ void Backend::setColor(const QColor &c) {
     m_color = c;
     emit colorChanged();
 
-    // The DSDT forwards three payload bytes to the EC in the order
-    // A=red, B=green, C=blue as the firmware names them; the physical LED
-    // wiring on this model maps them to a different channel order, which is
-    // why the UI shows the channel order it actually sends.
+    // The helper rotates RGB into the BRG order this panel actually uses
+    // (payload A=blue, B=red, C=green), so QML stays plain RGB and the
+    // hardware quirk lives in one place.
     QString err;
     if (!runHelper({QStringLiteral("color"), QString::number(c.red()),
                     QString::number(c.green()), QString::number(c.blue())},

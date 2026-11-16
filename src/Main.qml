@@ -249,7 +249,7 @@ ApplicationWindow {
                     color: Qt.rgba(1, 1, 1, 0.7)
                 }
                 Label {
-                    text: qsTr("Send A, B or C alone at full value and note which colour appears. That tells the app which channel to use for each colour.")
+                    text: qsTr("This model maps the payload bytes as A=blue, B=red, C=green (BRG, not RGB). The colour picker already compensates; these buttons send each payload byte alone.")
                     font.pixelSize: 11
                     color: Qt.rgba(1, 1, 1, 0.45)
                     wrapMode: Text.WordWrap
@@ -258,15 +258,15 @@ ApplicationWindow {
                 RowLayout {
                     spacing: 8
                     Button {
-                        text: qsTr("Channel A")
+                        text: qsTr("A → blue")
                         onClicked: backend.applyRaw("0x0FFF0000")
                     }
                     Button {
-                        text: qsTr("Channel B")
+                        text: qsTr("B → red")
                         onClicked: backend.applyRaw("0x0F00FF00")
                     }
                     Button {
-                        text: qsTr("Channel C")
+                        text: qsTr("C → green")
                         onClicked: backend.applyRaw("0x0F0000FF")
                     }
                 }

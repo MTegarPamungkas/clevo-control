@@ -75,10 +75,24 @@ static unsigned int brightness_args(int level) {
     return ((unsigned int) MODE_BRIGHTNESS << 28) | (nibble << 12);
 }
 
-static unsigned int color_args(int a, int b, int c, int zone) {
+/* The EC payload bytes are NOT in RGB order. On this panel the firmware
+ * labels them A, B, C and the physical wiring maps them as:
+ *
+ *   payload A -> BLUE
+ *   payload B -> RED
+ *   payload C -> GREEN
+ *
+ * So a plain RGB colour has to be rotated into BRG before it goes out.
+ * Getting this wrong is visible immediately: #00FFFF (cyan) sent as RGB
+ * lights red+green and comes out yellow, which is how this was found. */
+static unsigned int color_args(int r, int g, int b, int zone) {
+    const int payload_a = b;  /* blue   */
+    const int payload_b = r;  /* red    */
+    const int payload_c = g;  /* green  */
     return ((unsigned int) MODE_COLOR << 28) | (((unsigned int) zone & 0xF) << 24)
-           | (((unsigned int) a & 0xFF) << 16) | (((unsigned int) b & 0xFF) << 8)
-           | ((unsigned int) c & 0xFF);
+           | (((unsigned int) payload_a & 0xFF) << 16)
+           | (((unsigned int) payload_b & 0xFF) << 8)
+           | ((unsigned int) payload_c & 0xFF);
 }
 
 static int parse_int(const char *s, int *out) {
