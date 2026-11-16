@@ -3,6 +3,7 @@
 #include <QLockFile>
 #include <QDir>
 #include <QQmlContext>
+#include <QSettings>
 
 #include "backend.h"
 #include "fanbackend.h"
@@ -33,6 +34,14 @@ int main(int argc, char *argv[]) {
     FanBackend fan;
     IdleWatcher idle;
 
+    // Restore what the user last chose. Without this every restart began from
+    // the compiled-in defaults, so the backlight level and the idle setting
+    // silently reset.
+    QSettings settings;
+    const int savedBrightness = settings.value(QStringLiteral("brightness"), 8).toInt();
+    const bool savedIdle = settings.value(QStringLiteral("idleEnabled"), false).toBool();
+    const int savedTimeout = settings.value(QStringLiteral("idleTimeout"), 60).toInt();
+
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("theme"), &theme);
     engine.rootContext()->setContextProperty(QStringLiteral("backend"), &backend);
@@ -51,9 +60,34 @@ int main(int argc, char *argv[]) {
         backend.forceBrightness(backend.brightness());
     });
 
+    // Persist on every change, so a crash or a hard kill loses nothing.
+    QObject::connect(&backend, &Backend::brightnessChanged, [&backend, &settings]() {
+        if (backend.brightness() > 0)
+            settings.setValue(QStringLiteral("brightness"), backend.brightness());
+    });
+    QObject::connect(&idle, &IdleWatcher::enabledChanged, [&idle, &settings]() {
+        settings.setValue(QStringLiteral("idleEnabled"), idle.enabled());
+    });
+    QObject::connect(&idle, &IdleWatcher::timeoutSecondsChanged, [&idle, &settings]() {
+        settings.setValue(QStringLiteral("idleTimeout"), idle.timeoutSeconds());
+    });
+
+    // Leaving the light off when the window closes was the bug: closing while
+    // idle-dimmed left the backlight dark until the next launch, and nothing
+    // ever turned it back on. Always hand the light back at the user's level.
+    QObject::connect(&app, &QGuiApplication::aboutToQuit, [&backend, &idle]() {
+        if (idle.dimmed())
+            backend.forceBrightnessBlocking(backend.brightness() > 0 ? backend.brightness() : 8);
+    });
+
     engine.load(QUrl(QStringLiteral("qrc:/Main.qml")));
     if (engine.rootObjects().isEmpty())
         return 1;
+
+    // Apply the restored state before the window is shown.
+    backend.forceBrightness(savedBrightness);
+    idle.setTimeoutSeconds(savedTimeout);
+    idle.setEnabled(savedIdle);
 
     return app.exec();
 }

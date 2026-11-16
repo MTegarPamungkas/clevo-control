@@ -120,6 +120,24 @@ void Backend::forceBrightness(int level) {
     setStatus(level == 0 ? tr("Backlight off") : tr("Brightness %1").arg(level));
 }
 
+void Backend::forceBrightnessBlocking(int level) {
+    if (level < 0)
+        level = 0;
+    if (level > 9)
+        level = 9;
+    m_brightness = level;
+
+    QString path = QStandardPaths::findExecutable(HELPER);
+    if (path.isEmpty())
+        path = QStringLiteral("/usr/local/bin/") + HELPER;
+
+    QProcess p;
+    p.start(path, {QStringLiteral("brightness"), QString::number(level)});
+    // Wait for the helper to finish, otherwise the process is killed when the
+    // app exits and the light stays off.
+    p.waitForFinished(3000);
+}
+
 void Backend::turnOff() {
     runHelper({QStringLiteral("off")});
     setStatus(tr("Backlight off"));
