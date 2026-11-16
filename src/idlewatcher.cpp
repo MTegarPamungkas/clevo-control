@@ -58,7 +58,9 @@ void IdleWatcher::closeDevice() {
     }
 }
 
-void IdleWatcher::onReadable() {
+void IdleWatcher::onReadable(QSocketDescriptor fd, QSocketNotifier::Type type) {
+    Q_UNUSED(fd)
+    Q_UNUSED(type)
     // Drain the pending events. Only key presses count as activity; key
     // releases, repeats and pointer-less EV_SYN noise should not keep the
     // light on forever.

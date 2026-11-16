@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QString>
 #include <QTimer>
+#include <QSocketNotifier>
 
 class QSocketNotifier;
 
@@ -54,7 +55,7 @@ signals:
     void restoreRequested();
 
 private slots:
-    void onReadable();
+    void onReadable(QSocketDescriptor fd, QSocketNotifier::Type type);
     void checkIdle();
 
 private:
