@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Install the user service that starts the GUI at login.
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+mkdir -p ~/.config/systemd/user
+install -m 0644 pkgbuild/clevo-control.service ~/.config/systemd/user/clevo-control.service
+systemctl --user daemon-reload
+systemctl --user enable clevo-control.service
+echo "installed clevo-control.service (enabled)"

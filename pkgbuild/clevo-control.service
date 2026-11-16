@@ -1,0 +1,17 @@
+[Unit]
+Description=Clevo Control (keyboard backlight and fan GUI)
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+# The GUI talks to the fan daemon over its socket and to kbdlight-ctl for the
+# backlight; it never touches the EC itself.
+ExecStart=/usr/local/bin/kbdlight
+Restart=on-failure
+RestartSec=3
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+Environment=GDK_BACKEND=wayland,x11
+
+[Install]
+WantedBy=graphical-session.target

@@ -1,4 +1,12 @@
-# Let the `input` group read the built-in keyboard so the idle watcher can
-# tell when the user last typed. Without this the device is root-only and the
-# auto-off feature cannot work.
+# Let the idle watcher read the built-in keyboard.
+#
+# MODE/GROUP is used rather than TAG+="uaccess": uaccess was tried and the ACL
+# never landed, because logind only grants it for devices it considers part of
+# the active seat's session, and this keyboard is claimed by the kernel's
+# atkbd driver before that handshake completes.
+#
+# 0640 root:input plus membership of `input` is the reliable route. The
+# catch is that a running systemd user manager keeps the groups it started
+# with, so `usermod -aG input` only takes effect after the user manager is
+# restarted (or after a full reboot).
 SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="AT Translated Set 2 keyboard", MODE="0640", GROUP="input"
