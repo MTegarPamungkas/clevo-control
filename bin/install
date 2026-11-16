@@ -18,5 +18,17 @@ sudo install -m 0644 pkgbuild/kbdlight.desktop /usr/local/share/applications/kbd
 sudo install -m 0644 pkgbuild/kbdlight.svg /usr/local/share/icons/hicolor/scalable/apps/kbdlight.svg
 sudo update-desktop-database /usr/local/share/applications 2>/dev/null || true
 
+echo "==> installing udev rule for keyboard access"
+sudo install -m 0644 pkgbuild/90-kbdlight-input.rules /etc/udev/rules.d/90-kbdlight-input.rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger --subsystem-match=input
+
+if ! id -nG "$USER" | tr ' ' '\n' | grep -qx input; then
+  echo
+  echo "NOTE: add yourself to the input group so the idle watcher can read the"
+  echo "      keyboard, then log out and back in:"
+  echo "        sudo usermod -aG input $USER"
+fi
+
 echo "==> done"
 ls -l /usr/local/bin/kbdlight /usr/local/bin/kbdlight-ctl
