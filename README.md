@@ -10,7 +10,7 @@ the Omarchy theme.
 
 | Feature | Status |
 |---|---|
-| Brightness 0-9 (off / dim / bright) | **works** |
+| Brightness 0-9 (0 = off, 1 = dim, 9 = bright) | **works** |
 | Turn off | **works** |
 | Colour (RGB) | **works** — the payload order is BRG, see below |
 
@@ -70,7 +70,12 @@ so a failure is shown in the window instead of being swallowed.
 | 16-23 | payload byte A |
 | 8-15 | payload byte B |
 | 0-7 | payload byte C |
-| 12-15 | brightness level 1-9, `>= 0xA` = off |
+| 12-15 | brightness nibble; **1 = brightest, 9 = dimmest**, `>= 0xA` = off |
+
+The nibble runs opposite to the slider: the DSDT computes
+`EC = 0xFF - nibble*0x19`, and a low EC value is a dim panel, so nibble 1 is
+full brightness. `kbdlight-ctl brightness <1-9>` inverts it (`nibble =
+10 - level`) so the UI reads the intuitive way, 1 = dim and 9 = bright.
 
 ## Shortcuts
 

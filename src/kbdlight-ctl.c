@@ -69,9 +69,18 @@ static int write_call(unsigned int args) {
 }
 
 static unsigned int brightness_args(int level) {
-    /* DSDT: nibble >= 0xA turns the backlight off; otherwise the EC receives
-     * 0xFF - level*0x19, so a high level means a low EC value. */
-    unsigned int nibble = (level >= 1 && level <= 9) ? (unsigned int) level : 0xAU;
+    /* The EC nibble runs opposite to what a brightness slider means. The DSDT
+     * computes EC = 0xFF - nibble*0x19, and a low EC value is a dim panel, so
+     * nibble 1 is the brightest and nibble 9 the dimmest. Passing the UI level
+     * straight through made the slider backwards (1 bright, 9 dim); invert it
+     * here so 1 = dim and 9 = bright. A nibble >= 0xA means off. */
+    unsigned int nibble;
+    if (level <= 0)
+        nibble = 0xAU;
+    else if (level > 9)
+        nibble = 1U;
+    else
+        nibble = (unsigned int) (10 - level);
     return ((unsigned int) MODE_BRIGHTNESS << 28) | (nibble << 12);
 }
 
