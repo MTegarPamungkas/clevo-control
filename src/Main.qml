@@ -6,7 +6,7 @@ import QtQuick.Layouts
 ApplicationWindow {
     id: root
     width: 560
-    height: 620
+    height: 760
     visible: true
     title: qsTr("Keyboard Light")
     color: theme.background
@@ -140,6 +140,7 @@ ApplicationWindow {
             color: Qt.rgba(1, 1, 1, 0.75)
         }
 
+        // Quick presets stay: they are one click and cover the common picks.
         RowLayout {
             Layout.fillWidth: true
             spacing: 10
@@ -158,7 +159,7 @@ ApplicationWindow {
                 delegate: Rectangle {
                     required property var modelData
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 44
+                    Layout.preferredHeight: 36
                     radius: Math.min(4, theme.radius)
                     color: modelData.c
                     border.width: backend.color.toString().toUpperCase() === modelData.c.toUpperCase() ? 3 : 1
@@ -175,14 +176,21 @@ ApplicationWindow {
             }
         }
 
+        // The picker previews live; the hardware is only written on release so
+        // dragging does not flood the EC with dozens of ACPI calls.
+        ColorPicker {
+            id: picker
+            Layout.fillWidth: true
+            color: backend.color
+            onPicked: (c) => {
+                backend.color = c
+                backend.apply()
+            }
+        }
+
         RowLayout {
             Layout.fillWidth: true
             spacing: 12
-            Label {
-                text: qsTr("Custom")
-                font.pixelSize: 13
-                color: Qt.rgba(1, 1, 1, 0.7)
-            }
             Rectangle {
                 width: 40; height: 28
                 radius: Math.min(4, theme.radius)
@@ -190,16 +198,12 @@ ApplicationWindow {
                 border.width: 1
                 border.color: Qt.rgba(1, 1, 1, 0.25)
             }
-            TextField {
-                id: hexField
-                Layout.fillWidth: true
-                placeholderText: qsTr("#RRGGBB")
+            Label {
                 text: backend.color.toString().toUpperCase()
-                onEditingFinished: {
-                    var c = text.trim()
-                    if (c.length === 7 && c[0] === "#")
-                        backend.color = c
-                }
+                font.family: "monospace"
+                font.pixelSize: 13
+                color: Qt.rgba(1, 1, 1, 0.7)
+                Layout.fillWidth: true
             }
         }
 
