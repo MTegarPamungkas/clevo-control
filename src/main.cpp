@@ -129,9 +129,21 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty(QStringLiteral("fan"), &fan);
     engine.rootContext()->setContextProperty(QStringLiteral("idle"), &idle);
 
-    // Persist on every change, so a crash or a hard kill loses nothing. sync()
-    // makes the write visible to kbdlight-idle straight away instead of when
-    // QSettings decides to flush.
+    engine.load(QUrl(QStringLiteral("qrc:/Main.qml")));
+    if (engine.rootObjects().isEmpty())
+        return 1;
+
+    // Apply the restored state before the window is shown.
+    backend.forceBrightness(savedBrightness);
+    backend.forceColor(savedColor);
+    idle.setTimeoutSeconds(savedTimeout);
+    idle.setEnabled(savedIdle);
+
+    // Persist changes the user makes, so a crash or a hard kill loses nothing.
+    // These connections come after the restore on purpose: restoring is not a
+    // user change, and rewriting the file at every start made the idle
+    // service reload for no reason. sync() makes each write visible to
+    // kbdlight-idle straight away instead of when QSettings decides to flush.
     QObject::connect(&backend, &Backend::brightnessChanged, [&backend, &settings]() {
         if (backend.brightness() > 0)
             settings.setValue(QStringLiteral("brightness"), backend.brightness());
@@ -143,6 +155,7 @@ int main(int argc, char *argv[]) {
         settings.sync();
     });
     QObject::connect(&idle, &IdleWatcher::enabledChanged, [&idle, &settings]() {
+        qInfo("kbdlight: idleEnabled -> %s", idle.enabled() ? "true" : "false");
         settings.setValue(QStringLiteral("idleEnabled"), idle.enabled());
         settings.sync();
     });
@@ -150,16 +163,6 @@ int main(int argc, char *argv[]) {
         settings.setValue(QStringLiteral("idleTimeout"), idle.timeoutSeconds());
         settings.sync();
     });
-
-    engine.load(QUrl(QStringLiteral("qrc:/Main.qml")));
-    if (engine.rootObjects().isEmpty())
-        return 1;
-
-    // Apply the restored state before the window is shown.
-    backend.forceBrightness(savedBrightness);
-    backend.forceColor(savedColor);
-    idle.setTimeoutSeconds(savedTimeout);
-    idle.setEnabled(savedIdle);
 
     return app.exec();
 }

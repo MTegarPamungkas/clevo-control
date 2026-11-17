@@ -276,7 +276,13 @@ ApplicationWindow {
                     Switch {
                         checked: idle.enabled
                         enabled: idle.deviceAvailable
-                        onToggled: idle.enabled = checked
+                        // Typing must never flip this. Waking the backlight is
+                        // done by pressing a key, and a focused switch turned
+                        // that same key press into "idle off" — the feature
+                        // looked broken right after the user closed the
+                        // window. Only a real click may change it.
+                        focusPolicy: Qt.NoFocus
+                        onClicked: idle.enabled = checked
                     }
                 }
 
