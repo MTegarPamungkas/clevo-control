@@ -120,6 +120,18 @@ void Backend::forceBrightness(int level) {
     setStatus(level == 0 ? tr("Backlight off") : tr("Brightness %1").arg(level));
 }
 
+void Backend::forceColor(const QColor &c) {
+    if (!c.isValid())
+        return;
+    m_color = c;
+    m_colorDebounce.stop();
+    m_pendingColor = false;
+    emit colorChanged();
+    runHelper({QStringLiteral("color"), QString::number(c.red()),
+               QString::number(c.green()), QString::number(c.blue())});
+    setStatus(tr("Colour %1").arg(c.name().toUpper()));
+}
+
 void Backend::forceBrightnessBlocking(int level) {
     if (level < 0)
         level = 0;

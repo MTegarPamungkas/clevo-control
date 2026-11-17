@@ -1,6 +1,6 @@
 [Unit]
 Description=Clevo Control (keyboard backlight and fan GUI)
-After=graphical-session.target
+After=graphical-session.target clevo-indicator-dual.service
 PartOf=graphical-session.target
 
 [Service]

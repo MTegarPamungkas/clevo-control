@@ -41,6 +41,8 @@ int main(int argc, char *argv[]) {
     const int savedBrightness = settings.value(QStringLiteral("brightness"), 8).toInt();
     const bool savedIdle = settings.value(QStringLiteral("idleEnabled"), false).toBool();
     const int savedTimeout = settings.value(QStringLiteral("idleTimeout"), 60).toInt();
+    // The colour is a choice too; without this every launch came back white.
+    const QColor savedColor(settings.value(QStringLiteral("color"), QStringLiteral("#ffffff")).toString());
 
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("theme"), &theme);
@@ -65,6 +67,10 @@ int main(int argc, char *argv[]) {
         if (backend.brightness() > 0)
             settings.setValue(QStringLiteral("brightness"), backend.brightness());
     });
+    QObject::connect(&backend, &Backend::colorChanged, [&backend, &settings]() {
+        if (backend.color().isValid())
+            settings.setValue(QStringLiteral("color"), backend.color().name(QColor::HexRgb));
+    });
     QObject::connect(&idle, &IdleWatcher::enabledChanged, [&idle, &settings]() {
         settings.setValue(QStringLiteral("idleEnabled"), idle.enabled());
     });
@@ -86,6 +92,7 @@ int main(int argc, char *argv[]) {
 
     // Apply the restored state before the window is shown.
     backend.forceBrightness(savedBrightness);
+    backend.forceColor(savedColor);
     idle.setTimeoutSeconds(savedTimeout);
     idle.setEnabled(savedIdle);
 

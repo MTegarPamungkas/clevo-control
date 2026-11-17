@@ -41,6 +41,10 @@ public:
     // untouched, so restoring it would otherwise be skipped as a no-op.
     Q_INVOKABLE void forceBrightness(int level);
 
+    // The startup counterpart for the saved colour: the EC may still hold a
+    // different colour, so the write must happen even if it is plain white.
+    void forceColor(const QColor &c);
+
     // Blocking variant used on shutdown. The normal path is asynchronous so
     // the UI never stalls, but at exit there is no event loop left to deliver
     // the finished signal, and the helper would be killed mid-write.
