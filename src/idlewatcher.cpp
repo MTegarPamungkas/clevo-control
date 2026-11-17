@@ -9,7 +9,8 @@
 #include <linux/input.h>
 #include <unistd.h>
 
-IdleWatcher::IdleWatcher(QObject *parent) : QObject(parent) {
+IdleWatcher::IdleWatcher(bool controller, QObject *parent)
+    : QObject(parent), m_controller(controller) {
     // Poll once a second: cheap, and the idle deadline only needs second
     // resolution.
     m_tick.setInterval(1000);
@@ -85,7 +86,7 @@ void IdleWatcher::onReadable(QSocketDescriptor fd, QSocketNotifier::Type type) {
 }
 
 void IdleWatcher::checkIdle() {
-    if (!m_enabled || !m_notifier || m_dimmed)
+    if (!m_controller || !m_enabled || !m_notifier || m_dimmed)
         return;
     if (!m_idle.isValid())
         m_idle.start();
@@ -103,7 +104,8 @@ void IdleWatcher::setEnabled(bool on) {
     m_enabled = on;
     if (on) {
         m_idle.start();
-        m_tick.start();
+        if (m_controller)
+            m_tick.start();
     } else {
         m_tick.stop();
         if (m_dimmed) {

@@ -1,0 +1,23 @@
+[Unit]
+Description=Keyboard backlight idle watcher
+# Runs beside the window so "turn off when idle" keeps working after Clevo
+# Control is closed. graphical-session.target is stopped and started on every
+# logout and login, which is what makes the watcher come back.
+After=graphical-session.target
+PartOf=graphical-session.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/kbdlight --idle-daemon
+Restart=on-failure
+RestartSec=3
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+# Qt 6 writes its log messages to the journal instead of stderr whenever
+# stderr is not a terminal, which made `journalctl -u kbdlight-idle` look
+# empty and debugging the idle timeout needlessly hard.
+Environment=QT_ASSUME_STDERR_HAS_CONSOLE=1
+
+[Install]
+WantedBy=graphical-session.target

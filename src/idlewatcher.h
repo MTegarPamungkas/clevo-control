@@ -29,7 +29,12 @@ class IdleWatcher : public QObject {
     Q_PROPERTY(bool deviceAvailable READ deviceAvailable NOTIFY devicePathChanged)
 
 public:
-    explicit IdleWatcher(QObject *parent = nullptr);
+    // controller = false makes this a read-only view for the window: it still
+    // reports whether the keyboard is readable and holds the settings shown in
+    // the UI, but it never dims or restores the backlight. The headless
+    // kbdlight-idle service owns the hardware so the feature keeps working
+    // after the window is closed.
+    explicit IdleWatcher(bool controller = true, QObject *parent = nullptr);
 
     bool enabled() const { return m_enabled; }
     void setEnabled(bool on);
@@ -65,6 +70,7 @@ private:
     bool m_enabled = false;
     int m_timeoutSeconds = 60;
     bool m_dimmed = false;
+    bool m_controller = true;
     QString m_devicePath;
     QSocketNotifier *m_notifier = nullptr;
     QElapsedTimer m_idle;
