@@ -456,15 +456,22 @@ ApplicationWindow {
                     spacing: 10
                     Button {
                         text: qsTr("Automatic")
-                        highlighted: fan.autoMode
+                        highlighted: fan.autoMode && !fan.quietMode
                         enabled: fan.connected
                         onClicked: fan.setAuto()
+                    }
+                    Button {
+                        text: qsTr("Quiet")
+                        highlighted: fan.quietMode
+                        enabled: fan.connected
+                        onClicked: fan.setQuiet()
                     }
                     Item { Layout.fillWidth: true }
                     Label {
                         text: fan.connected
-                              ? (fan.autoMode ? qsTr("firmware curve")
-                                              : fan.duty.toLocaleString(Qt.locale(), 'f', 0) + "%")
+                              ? (fan.quietMode ? qsTr("quiet curve (app)")
+                                 : fan.autoMode ? qsTr("auto curve")
+                                 : fan.duty.toLocaleString(Qt.locale(), 'f', 0) + "%")
                               : qsTr("daemon offline")
                         font.pixelSize: 14
                         font.bold: true
@@ -495,6 +502,14 @@ ApplicationWindow {
 
                 Label {
                     text: qsTr("Manual duty below 40% stalls the fans, so the EC refuses it.")
+                    font.pixelSize: 11
+                    color: Qt.rgba(1, 1, 1, 0.4)
+                    wrapMode: Text.WordWrap
+                    Layout.fillWidth: true
+                }
+
+                Label {
+                    text: qsTr("Quiet starts taking over at 54 °C. It returns to firmware control after 12 seconds at 40% duty and 52 °C or below.")
                     font.pixelSize: 11
                     color: Qt.rgba(1, 1, 1, 0.4)
                     wrapMode: Text.WordWrap

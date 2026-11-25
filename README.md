@@ -16,7 +16,7 @@ Two tabs: **Keyboard** and **Fan** (`Ctrl+1` / `Ctrl+2`).
 | Turn off | **works** |
 | Colour (RGB) | **works** — HSV picker, payload order is BRG, see below |
 | CPU / GPU temperature and both fan RPMs | **live**, via the daemon |
-| Fan speed: automatic or fixed 40-100% | **works** |
+| Fan speed: Auto, Quiet, or fixed 40-100% | **works** |
 | Backlight auto-off when idle | **works** — needs the `input` group |
 
 ### Turning the backlight off when idle
@@ -42,15 +42,16 @@ pretending the feature works.
 ### How the two halves stay out of each other's way
 
 The fans are owned by a background daemon (`clevo-indicator-dual`, a systemd
-user service) that polls the embedded controller every 200 ms. The keyboard
-backlight goes through ACPI instead, so it can be driven at the same time.
+user service) that samples the embedded controller every 200–750 ms. The
+keyboard backlight uses a separate ACPI method.
 
 The GUI never touches the fan EC registers itself. It talks to the daemon over
 a Unix socket at `/run/clevo-indicator-dual.sock`:
 
 ```
-status          -> ok cpu=62 gpu=56 rpm1=4520 rpm2=2403 duty=55 auto=1
-set <0|40..100> -> ok        (0 hands both fans back to the firmware curve)
+status          -> ok cpu=62 gpu=56 rpm1=4520 rpm2=2403 duty=60 auto=1 mode=auto
+set quiet       -> ok        (lower automatic curve)
+set <0|40..100> -> ok        (0 selects Auto)
 ```
 
 A second process poking the EC I/O ports corrupts the daemon's replies — that
@@ -84,22 +85,32 @@ the quirk lives in one place. The **Diagnostics** panel sends each payload
 byte alone (`A -> blue`, `B -> red`, `C -> green`) so you can re-confirm it
 on a different model.
 
-## Build and install
+## Install on a fresh Omarchy system
 
-The fan tab needs the daemon with the control socket, which lives in the
-separate fan project:
-
-```bash
-cd ~/Projects/clevo-axioo-dual-fan-linux
-./install-fixed.sh
-```
+Run in your desktop session as a user in the `wheel` group. This repository
+includes the Qt GUI, keyboard helper, and [fan daemon](fan-daemon).
 
 ```bash
-./bin/build     # builds build/kbdlight and build/kbdlight-ctl
-./bin/install   # needs sudo: helper is setuid root
+sudo pacman -S --needed base-devel git github-cli linux-omarchy-headers acpi_call-dkms \
+  qt6-base qt6-declarative qt6-wayland libayatana-appindicator
+gh auth login
+gh repo clone MTegarPamungkas/clevo-control
+cd clevo-control
+./bin/install
 ```
 
-The app then appears in the launcher as **Keyboard Light**.
+Use your GitHub account with access to the private repository. If you already
+authenticated with `gh`, skip `gh auth login`. Use headers for your running
+kernel if you use a custom kernel. If the kernel was just updated, reboot to
+the updated kernel before running the installer so it can load the DKMS module.
+
+Open **Clevo Control** from the launcher. The fan daemon and keyboard idle
+watcher start at graphical login. For the idle feature, add your desktop user
+to `input` as shown above and log out and back in.
+
+To update an existing clone, run `git pull --ff-only` followed by
+`./bin/install`. For a build without installing, run `./bin/build` and
+`make -C fan-daemon`.
 
 ## How it talks to the hardware
 
@@ -157,4 +168,5 @@ pkgbuild/             .desktop and icon
 
 ## Licence
 
-MIT
+The keyboard GUI and helper use MIT. The bundled fan daemon uses
+[GPL version 2](fan-daemon/LICENSE).

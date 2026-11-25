@@ -43,17 +43,6 @@ static void usage(void) {
             "       kbdlight-ctl probe\n");
 }
 
-/* /proc/acpi/call is root-only, and loading the module needs root too, so
- * this runs while the effective uid is still 0. */
-static int ensure_module(void) {
-    if (access(ACPI_CALL_PATH, F_OK) == 0)
-        return 0;
-    if (system("/usr/bin/modprobe acpi_call 2>/dev/null") != 0
-            && system("modprobe acpi_call 2>/dev/null") != 0)
-        return -1;
-    return access(ACPI_CALL_PATH, F_OK) == 0 ? 0 : -1;
-}
-
 static int write_call(unsigned int args) {
     char buf[128];
     int n = snprintf(buf, sizeof(buf), "%s 0 0x67 0x%08X", ACPI_METHOD, args);
@@ -119,8 +108,8 @@ int main(int argc, char **argv) {
         usage();
         return 2;
     }
-    if (ensure_module() != 0) {
-        fprintf(stderr, "acpi_call is not available: %s\n", strerror(errno));
+    if (access(ACPI_CALL_PATH, F_OK) != 0) {
+        fprintf(stderr, "acpi_call is not available. Load it with sudo modprobe acpi_call.\n");
         return 1;
     }
 

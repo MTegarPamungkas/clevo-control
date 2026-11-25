@@ -1,6 +1,10 @@
 build/
+/kbdlight
+/fan-daemon/bin/
+/fan-daemon/obj/
 *.o
 moc_*
 qrc_*
 Makefile
+!/fan-daemon/Makefile
 .qmake.stash

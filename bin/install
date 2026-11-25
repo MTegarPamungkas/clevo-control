@@ -1,16 +1,31 @@
 #!/usr/bin/env bash
-# Install kbdlight into the launcher. Needs sudo: the helper must be setuid
-# root to write /proc/acpi/call.
+# Install the GUI, fan daemon, and user services on Omarchy.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
+if (( EUID == 0 )) || ! id -nG | tr ' ' '\n' | grep -qx wheel; then
+  echo "Run this as your desktop user in the wheel group." >&2
+  exit 1
+fi
+
 ./bin/build
+make -C fan-daemon
+
+echo "==> loading ACPI and EC modules"
+sudo modprobe acpi_call
+sudo modprobe ec_sys
+sudo install -Dm644 pkgbuild/clevo-control.conf /etc/modules-load.d/clevo-control.conf
 
 echo "==> installing /usr/local/bin/kbdlight"
-sudo install -m 0755 build/kbdlight /usr/local/bin/kbdlight
+sudo install -Dm0755 -o root -g root build/kbdlight /usr/local/bin/kbdlight
 
 echo "==> installing setuid helper /usr/local/bin/kbdlight-ctl"
 sudo install -m 4750 -o root -g wheel build/kbdlight-ctl /usr/local/bin/kbdlight-ctl
+
+echo "==> installing the fan daemon"
+sudo install -m 4750 -o root -g wheel fan-daemon/bin/clevo-indicator-dual /usr/bin/clevo-indicator-dual
+sudo install -d -m 0755 -o root -g root /var/lib/clevo-indicator-dual
+sudo install -Dm644 pkgbuild/clevo-indicator-dual.svg /usr/share/icons/hicolor/scalable/apps/clevo-indicator-dual.svg
 
 echo "==> installing desktop entry and icon"
 sudo install -d /usr/local/share/applications /usr/local/share/icons/hicolor/scalable/apps
@@ -23,17 +38,25 @@ sudo install -m 0644 pkgbuild/90-kbdlight-input.rules /etc/udev/rules.d/90-kbdli
 sudo udevadm control --reload-rules
 sudo udevadm trigger --subsystem-match=input
 
-if ! id -nG "$USER" | tr ' ' '\n' | grep -qx input; then
+if ! id -nG | tr ' ' '\n' | grep -qx input; then
   echo
   echo "NOTE: add yourself to the input group so the idle watcher can read the"
   echo "      keyboard, then log out and back in:"
   echo "        sudo usermod -aG input $USER"
 fi
 
-echo "==> installing the idle watcher service"
-install -Dm644 pkgbuild/kbdlight-idle.service "$HOME/.config/systemd/user/kbdlight-idle.service"
+echo "==> installing the fan and idle watcher services"
+unit_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+install -Dm644 pkgbuild/clevo-indicator-dual.service "$unit_dir/clevo-indicator-dual.service"
+install -Dm644 pkgbuild/kbdlight-idle.service "$unit_dir/kbdlight-idle.service"
 systemctl --user daemon-reload
-systemctl --user enable --now kbdlight-idle.service
+systemctl --user enable clevo-indicator-dual.service kbdlight-idle.service
+if systemctl --user is-active --quiet graphical-session.target; then
+  systemctl --user restart clevo-indicator-dual.service kbdlight-idle.service
+fi
+if systemctl --user is-active --quiet clevo-control.service; then
+  systemctl --user try-restart clevo-control.service
+fi
 
 echo "==> done"
-ls -l /usr/local/bin/kbdlight /usr/local/bin/kbdlight-ctl
+echo "Open Clevo Control from the launcher."
